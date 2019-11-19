@@ -1,0 +1,30 @@
+#                      Y-+-Z
+#                        |
+#                  a-+-b---V+W
+#                    |      X
+#                    |
+#           +--------+---+  i+J
+#           |        |   |   |
+#       m-+-n    e-+-c   d-+-f
+#         |        |       |
+#       P-Q-R-+-S  G     H-I-K
+#             |
+#             T
+          
+
+#IND	P1	P2
+b	Y	Z
+V	Y	Z
+c	a	b
+d	a	b
+n	a	b
+f	i	J
+G	e	c
+H	d	f
+I	d	f
+K	d	f
+P	m	n
+Q	m	n
+R	m	n
+T	R	S
+X	V	W

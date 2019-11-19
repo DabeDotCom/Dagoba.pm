@@ -1,0 +1,67 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use 5.010;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Dagoba;
+
+warn "WARNING: No \"\$fam_file\" specified; assuming \"example.fam\"\n\n" unless @ARGV;
+my $fam_file = $ARGV[0] // "example.fam";
+
+my $dag = Dagoba->from_fam($fam_file);
+
+say "G->PARENTS: @{[ map { $_->{'id'} } $dag->v('G')->parents->unique->run ]}";
+say "PARENTS(G): @{[ map { $_->{'id'} } $dag->parents('G') ]}";
+say "G->ID:      @{[ $dag->v('G')->parents->unique->prop('id')->run ]}";
+print "\n";
+
+say "G->GRANDPS: @{[ map { $_->{'id'} } $dag->v('G')->parents->parents->unique->run ]}";
+say "G->GRANDPS: @{[ map { $_->{'id'} } $dag->v('G')->grandparents->unique->run ]}";
+say "GRANDPS(G): @{[ map { $_->{'id'} } $dag->grandparents('G') ]}";
+print "\n";
+
+say "SIBLINGS(C): @{[ map { $_->{'id'} } $dag->v('c')->as('me')->parents->children->except('me')->unique->run ]}";
+say "SIBLINGS(C): @{[ map { $_->{'id'} } $dag->v('c')->siblings->run ]}";
+say "SIBLINGS(C): @{[ map { $_->{'id'} } $dag->siblings('c') ]}";
+print "\n";
+
+say "G->COUSINS: @{[ map { $_->{'id'} } $dag->v('G')->parents->as('folks')->parents->children->except('folks')->children->unique->run ]}";
+say "G->COUSINS: @{[ map { $_->{'id'} } $dag->v('G')->parents->siblings->children->unique->run ]}";
+say "G->COUSINS: @{[ map { $_->{'id'} } $dag->v('G')->aunts_uncles->children->unique->run ]}";
+say "G->COUSINS: @{[ map { $_->{'id'} } $dag->v('G')->cousins->unique->run ]}";
+say "COUSINS(G): @{[ map { $_->{'id'} } $dag->cousins('G') ]}";
+print "\n";
+
+# The "merge" pipetype only includes gremlins that are still part of the final query:
+say "PARENTS(G)    ==> @{[ map { $_->{'id'} } $dag->v('G')->parents->as('parents')->run ]}";
+say "GPARENT(G)    ==> @{[ map { $_->{'id'} } $dag->v('G')->parents->parents->as('grandparents')->run ]}";
+say "  MERGE(G)    ==> @{[ map { $_->{'id'} } $dag->v('G')->parents->as('parents')
+                                                          ->parents->as('grandparents')
+                                                          ->merge( 'parents', 'grandparents' )
+                                                          ->unique
+                                                          ->run ]}";
+
+# To get a true union, we need to perform multiple queries:
+say "ANCESTORS(G)  ==> @{[
+    sort keys %{{
+      map { $_->{'id'} => $_ }
+          (
+            $dag->parents('G'),
+            $dag->grandparents('G'),
+          )
+    }}
+]}";
+print "\n";
+
+# "aunts_uncles_all()" includes husbands/wives (AKA "cousins' parents")
+say "AUNT/UNCLE(G)     ==> @{[ map { $_->{'id'} } $dag->aunts_uncles('G') ]}";
+say "AUNT/UNCLE-ALL(G) ==> @{[ map { $_->{'id'} } $dag->aunts_uncles_all('G') ]}";
+print "\n";
+
+# "filter" lets us apply a predicate to a list of vertices
+say "ALL_PARENTS(J) ==> @{[ map { $_->{'id'} } $dag->v('f')->parents->run ]}";
+say " UC_PARENTS(J) ==> @{[ map { $_->{'id'} } $dag->v('f')->parents->filter( sub { $_[0]->{'id'} eq uc( $_[0]->{'id'} ) } )->run ]}";
+say " LC_PARENTS(J) ==> @{[ map { $_->{'id'} } $dag->v('f')->parents->filter( sub { $_[0]->{'id'} eq lc( $_[0]->{'id'} ) } )->run ]}";
